@@ -11,23 +11,27 @@ Practical backend architecture guide for APIs, services, boundaries, data access
 - [Backend Architecture Playbook 2026](#backend-architecture-playbook-2026)
   - [Table of Contents](#table-of-contents)
   - [Why this exists](#why-this-exists)
+  - [Companion playbooks](#companion-playbooks)
   - [The defaults I'd reach for first](#the-defaults-id-reach-for-first)
   - [Request flow](#request-flow)
   - [Models and boundaries](#models-and-boundaries)
     - [The boundary model split](#the-boundary-model-split)
     - [Why this matters](#why-this-matters)
-  - [Middleware and decorators](#middleware-and-decorators)
-    - [Good candidates for middleware](#good-candidates-for-middleware)
-    - [Good candidates for decorators or controller-level annotations](#good-candidates-for-decorators-or-controller-level-annotations)
+  - [Cross-cutting concerns at the HTTP edge](#cross-cutting-concerns-at-the-http-edge)
+    - [Good candidates for global pipeline steps](#good-candidates-for-global-pipeline-steps)
+    - [Good candidates for route-scoped setup](#good-candidates-for-route-scoped-setup)
     - [The defaults I would keep](#the-defaults-i-would-keep)
   - [Error handling](#error-handling)
     - [The model I would use](#the-model-i-would-use)
     - [A practical mapping](#a-practical-mapping)
+    - [Error payloads for TypeScript clients](#error-payloads-for-typescript-clients)
     - [Why I would avoid status-code leakage](#why-i-would-avoid-status-code-leakage)
   - [OpenAPI-first contracts](#openapi-first-contracts)
     - [What I would treat as the contract baseline](#what-i-would-treat-as-the-contract-baseline)
     - [Why OpenAPI belongs here](#why-openapi-belongs-here)
     - [Practical rules I would adopt](#practical-rules-i-would-adopt)
+    - [Sharing the contract with a React client](#sharing-the-contract-with-a-react-client)
+    - [Monorepos and a shared contract package](#monorepos-and-a-shared-contract-package)
   - [Persistence and repositories](#persistence-and-repositories)
     - [What repositories should do](#what-repositories-should-do)
     - [What repositories should not do](#what-repositories-should-not-do)
@@ -64,6 +68,16 @@ It takes the raw notes from this repository and turns them into a production-min
 
 ---
 
+## Companion playbooks
+
+These guides are written to line up as a **Node.js / React / TypeScript** stack story:
+
+- [Frontend Architecture Playbook 2026](https://github.com/khasky/frontend-architecture-playbook-2026) — React app structure, testing, and how the UI consumes APIs
+- [DevOps Delivery Playbook 2026](https://github.com/khasky/devops-delivery-playbook-2026) — CI lanes, staging, and release habits for the same repos
+- [Best of JavaScript 2026](https://github.com/khasky/best-of-javascript-2026) — curated tools that match the defaults below
+
+---
+
 ## The defaults I'd reach for first
 
 If I were starting a service today, I would usually default to something close to this:
@@ -71,12 +85,12 @@ If I were starting a service today, I would usually default to something close t
 - **Flow:** controller -> service -> repository -> data store or external gateway
 - **Boundary models:** DTOs at the edge, domain models in business logic, persistence models in the data layer
 - **Validation:** request validation at the boundary, before business logic runs
-- **Auth:** middleware or decorators, never hand-written in every controller method
+- **Auth:** enforced through the shared HTTP pipeline (middleware, hooks, `preHandler`, or composed wrappers), never hand-written inside every route handler
 - **Observability:** request ID on every request and response, structured logs, tracing hooks
 - **Errors:** custom domain/application exceptions + one global error handler
 - **API contract:** OpenAPI as the source of truth for request/response shape
 - **Persistence:** repositories own database access; services do not speak SQL/ORM directly
-- **Tests:** unit tests for services/repositories, integration tests for controllers, database-backed tests in containers
+- **Tests:** **[Vitest](https://vitest.dev/)** for unit and integration-style tests in new TypeScript services; **Jest** remains fine in large legacy codebases; **Playwright** (or similar) for browser-level checks owned by the frontend repo; database-backed tests in containers where persistence behavior matters
 
 That stack is not fancy. That is the point.
 
@@ -145,36 +159,39 @@ Keeping models distinct costs a little more up front and pays back every time th
 
 ---
 
-## Middleware and decorators
+## Cross-cutting concerns at the HTTP edge
 
 Cross-cutting concerns should feel boring, centralized, and repeatable.
 
-### Good candidates for middleware
+The same ideas show up under different names: **Express** leans on **middleware**; **Fastify** uses **hooks** (`onRequest`, `preHandler`, …) and **plugins** to package them; **Hono** uses **middleware** on the app and on routes. Below, "pipeline" means whatever runs around your handler in your chosen stack.
+
+### Good candidates for global pipeline steps
 
 - request IDs;
-- authentication bootstrap;
+- authentication bootstrap (parsing tokens, attaching a principal when cheap);
 - tracing;
-- metrics hooks;
+- metrics;
 - rate limiting;
 - body size limits;
 - common request logging.
 
-### Good candidates for decorators or controller-level annotations
+### Good candidates for route-scoped setup
 
-- request validation;
-- auth requirements;
-- analytics hooks;
-- method-level logging;
-- dependency injection wiring.
+Things you want **declared when the route is registered**, not reimplemented inside the handler body:
+
+- request validation for query, path, and body (for example: schema on the route, a validation middleware in the chain, or a small wrapper factory);
+- auth requirements for a path prefix or specific routes;
+- analytics or audit that should run only for certain endpoints;
+- composing the handler with shared dependencies (factory functions, thin wrappers) so the handler stays a thin entrypoint.
 
 ### The defaults I would keep
 
 - `X-Request-ID` or equivalent request correlation header;
-- validation decorators for query params, path params, and body;
-- auth decorators for API key and bearer-token protected routes;
-- structured method logging that can capture args, result metadata, and exceptions safely.
+- validation enforced at the route boundary (schema + shared validator, or middleware in the chain), so handlers receive already-checked input;
+- auth enforced the same way for protected routes (shared guard middleware, hook, or `preHandler`-style step), including API key and bearer-token flows;
+- structured logging around handlers that can capture safe metadata and errors without leaking secrets.
 
-The important rule is not "use decorators" The rule is "do not repeat policy by hand in every endpoint".
+The important rule is not which keyword your framework uses. The rule is "do not repeat policy by hand in every endpoint".
 
 ---
 
@@ -196,6 +213,18 @@ This is the part most teams under-design.
 - `NotFoundError` -> `404 Not Found`
 - `ConflictError` -> `409 Conflict`
 - uncaught or unknown errors -> `500 Internal Server Error`
+
+### Error payloads for TypeScript clients
+
+Your React app will branch on status codes and parse bodies. Agree on a **small, stable JSON shape** for error responses and describe it in OpenAPI (and in the [frontend playbook](https://github.com/khasky/frontend-architecture-playbook-2026) the client should use the same assumptions).
+
+I would standardize on something predictable along these lines:
+
+- **HTTP status** stays the primary signal (`4xx` / `5xx`).
+- **Body** includes fields the UI can rely on, for example: a machine-readable `code` (or `error`), a human-facing `message`, and **`request_id`** echoing the correlation header so support and logs line up with the browser.
+- **422** vs **400**: pick one style for validation failures and document it; mixed behavior across endpoints confuses generated clients and TanStack Query error paths.
+
+Keep internal stack traces and sensitive details out of the public body. The global error handler is the right place to enforce this consistently.
 
 ### Why I would avoid status-code leakage
 
@@ -236,6 +265,22 @@ An OpenAPI document gives both humans and tools a language-agnostic interface de
 - generate typed clients or models where that reduces drift;
 - let the contract drive validation, not the other way around.
 
+### Sharing the contract with a React client
+
+Treat the OpenAPI document as the **single source of truth** both servers and clients compile from. Typical TypeScript workflows:
+
+- generate **types** or **fetch clients** with **[openapi-typescript](https://github.com/drwpow/openapi-typescript)**, **[Hey API OpenAPI TS](https://github.com/hey-api/openapi-ts)**, or **[Orval](https://orval.dev/)**;
+- consume those types in **TanStack Query** hooks and keep hand-written DTOs in the frontend to a minimum;
+- fail CI when the spec drifts from implementation (contract tests or codegen in the pipeline — see the [DevOps playbook](https://github.com/khasky/devops-delivery-playbook-2026)).
+
+### Monorepos and a shared contract package
+
+In a **pnpm** (or npm) monorepo, a dedicated workspace package (for example `packages/api-contract`) can hold the OpenAPI file and published types. Useful habits:
+
+- **`openapi.yaml`** lives in one place; API and `apps/web` both depend on the generated output;
+- **Turborepo** / **Nx**: declare a `codegen` (or `openapi:generate`) task and make `build` depend on it so the UI never builds against stale types;
+- version the package with the API when breaking changes ship so React code and Node services upgrade together.
+
 ---
 
 ## Persistence and repositories
@@ -268,6 +313,8 @@ Repositories are one of the best places to win back clarity.
 ## Testing strategy
 
 The source material is very clear here, and I think it is right.
+
+**Default for new Node + TypeScript services:** **[Vitest](https://vitest.dev/)** for unit and HTTP integration tests (often with **Supertest** or the framework’s inject helper). **Jest** is still a reasonable choice when you are extending an existing Jest-heavy repo; align the runner with the [frontend](https://github.com/khasky/frontend-architecture-playbook-2026) and [DevOps](https://github.com/khasky/devops-delivery-playbook-2026) playbooks so CI commands stay obvious (`vitest run` vs `npm test -- --runInBand`).
 
 ### Minimum useful testing stack
 
@@ -305,14 +352,14 @@ If repository behavior matters, test against a real database or a close-enough e
 
 ```txt
 HTTP request
-  -> middleware attaches request_id
-  -> auth middleware/decorator resolves caller
-  -> validation decorator validates body/query/path
-  -> controller maps input DTO -> domain request
+  -> global pipeline attaches request_id
+  -> auth step in pipeline resolves caller
+  -> route-scoped validation validates body/query/path
+  -> handler maps input DTO -> domain request
   -> service executes business use case
   -> repository loads/saves persistence models
   -> service returns domain result
-  -> controller maps domain result -> response DTO
+  -> handler maps domain result -> response DTO
   -> global error handler maps exceptions if needed
   -> HTTP response includes request_id
 ```
@@ -335,7 +382,7 @@ async function addUser(req) {
 }
 ```
 
-The controller is thin. The service is meaningful. The response shape is explicit. That is the general goal.
+The HTTP entrypoint is thin. The service is meaningful. The response shape is explicit. That is the general goal.
 
 ---
 
@@ -359,8 +406,8 @@ src/
   api/
     controllers/
     dto/
-    middlewares/
-    decorators/
+    middleware/
+    routes/
     presenters/
   application/
     services/

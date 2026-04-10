@@ -70,7 +70,7 @@ It takes the raw notes from this repository and turns them into a production-min
 
 ## Companion playbooks
 
-These guides are written to line up as a **Node.js / React / TypeScript** stack story:
+These repositories form one playbook suite:
 
 - [Frontend Architecture Playbook 2026](https://github.com/khasky/frontend-architecture-playbook-2026) — React app structure, testing, and how the UI consumes APIs
 - [DevOps Delivery Playbook 2026](https://github.com/khasky/devops-delivery-playbook-2026) — CI lanes, staging, and release habits for the same repos

@@ -72,9 +72,11 @@ It takes the raw notes from this repository and turns them into a production-min
 
 These repositories form one playbook suite:
 
-- [Frontend Architecture Playbook 2026](https://github.com/khasky/frontend-architecture-playbook-2026) — React app structure, testing, and how the UI consumes APIs
-- [DevOps Delivery Playbook 2026](https://github.com/khasky/devops-delivery-playbook-2026) — CI lanes, staging, and release habits for the same repos
-- [Best of JavaScript 2026](https://github.com/khasky/best-of-javascript-2026) — curated tools that match the defaults below
+- [Frontend Architecture Playbook 2026](https://github.com/khasky/frontend-architecture-playbook-2026) — React app structure, UI boundaries, performance, and how the frontend consumes backend contracts
+- [Testing Strategy Playbook 2026](https://github.com/khasky/testing-strategy-playbook-2026) — unit, integration, contract, and E2E testing layers for the same architecture
+- [DevOps Delivery Playbook 2026](https://github.com/khasky/devops-delivery-playbook-2026) — CI lanes, staging, canary, rollback, and release habits around these repos
+- [Engineering Lead Playbook 2026](https://github.com/khasky/engineering-lead-playbook-2026) — standards, RFCs, code review expectations, and cross-team engineering leadership
+- [Best of JavaScript 2026](https://github.com/khasky/best-of-javascript-2026) — curated tooling that supports the defaults and trade-offs used across the suite
 
 ---
 

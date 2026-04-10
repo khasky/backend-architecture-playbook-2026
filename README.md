@@ -312,8 +312,6 @@ Repositories are one of the best places to win back clarity.
 
 ## Testing strategy
 
-The source material is very clear here, and I think it is right.
-
 **Default for new Node + TypeScript services:** **[Vitest](https://vitest.dev/)** for unit and HTTP integration tests (often with **Supertest** or the framework’s inject helper). **Jest** is still a reasonable choice when you are extending an existing Jest-heavy repo; align the runner with the [frontend](https://github.com/khasky/frontend-architecture-playbook-2026) and [DevOps](https://github.com/khasky/devops-delivery-playbook-2026) playbooks so CI commands stay obvious (`vitest run` vs `npm test -- --runInBand`).
 
 ### Minimum useful testing stack

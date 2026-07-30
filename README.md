@@ -1,5 +1,7 @@
 # Backend Architecture Playbook
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Web Reactions](https://api.webreactions.app/badge/github/khasky/backend-architecture-playbook.svg)](https://webreactions.app/?utm_source=github&utm_channel=repository&utm_medium=backend-architecture-playbook)
+
 Practical backend architecture guide for APIs, services, boundaries, data access, testing, and system evolution.
 
 > *If I were setting a backend standard for a product team today, I would optimize for four things first: explicit request flow, strict model boundaries, predictable error handling, and contracts that machines can validate.*

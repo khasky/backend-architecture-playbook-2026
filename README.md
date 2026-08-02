@@ -81,6 +81,7 @@ These repositories form one playbook suite:
 - [Best of JavaScript](https://github.com/khasky/best-of-javascript) — curated JS/TS tooling and stack defaults
 - [Caching Playbook](https://github.com/khasky/caching-playbook) — HTTP, CDN, and application caches; consistency and invalidation
 - [Code Review Playbook](https://github.com/khasky/code-review-playbook) — PR quality, ownership, and review culture
+- [CTO Playbook](https://github.com/khasky/cto-playbook) — org design, hiring, technical strategy, budgets, and due diligence
 - [DevOps Delivery Playbook](https://github.com/khasky/devops-delivery-playbook) — CI/CD, environments, rollout safety, and observability
 - [Engineering Lead Playbook](https://github.com/khasky/engineering-lead-playbook) — standards, RFCs, and technical leadership habits
 - [Frontend Architecture Playbook](https://github.com/khasky/frontend-architecture-playbook) — React structure, performance, and consuming API contracts
@@ -94,6 +95,7 @@ These repositories form one playbook suite:
 - [Software Design Playbook](https://github.com/khasky/software-design-playbook) — separation of concerns, composition, and module boundaries
 - [State Management Playbook](https://github.com/khasky/state-management-playbook) — client state architecture, MobX, and choosing a state layer
 - [Styling Architecture Playbook](https://github.com/khasky/styling-architecture-playbook) — type-safe styling, design tokens, and theming at scale
+- [Sysadmin Operations Playbook](https://github.com/khasky/sysadmin-operations-playbook) — servers, backups, DNS, TLS, identity, and the self-hosted ops stack
 - [Testing Strategy Playbook](https://github.com/khasky/testing-strategy-playbook) — unit, integration, contract, E2E, and CI-friendly test layers
 
 ---

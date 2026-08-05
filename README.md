@@ -260,6 +260,8 @@ I would also avoid overusing response codes purely because they exist. A smaller
 
 OpenAPI is one of the easiest ways to make a backend feel more real, even before it grows large.
 
+If the two names confuse you: it is the same specification. Swagger was donated by SmartBear to the Linux Foundation in 2015 and renamed OpenAPI; SmartBear kept the Swagger name for its tools. So "Swagger UI" and "Swagger Codegen" are products, while the document your API is described by is an OpenAPI document — and anything still describing itself as the *Swagger specification* is pointing at 2.0, which predates the rename.
+
 ### What I would treat as the contract baseline
 
 - endpoint paths and methods;
@@ -308,6 +310,10 @@ In a **pnpm** (or npm) monorepo, a dedicated workspace package (for example `pac
 ## Persistence and repositories
 
 Repositories are one of the best places to win back clarity.
+
+Worth separating the pattern from the library. Repository and Unit of Work were catalogued by Martin Fowler in *Patterns of Enterprise Application Architecture* (2002), and the point of a repository was to make persistence look like an **in-memory collection of domain objects** — you ask it for things in domain terms and it hides where they live.
+
+Most ORMs now ship a class called something like `Repository` that is a thin generic wrapper over a table, with `findOne`, `save`, `delete`. That is a data mapper with the pattern's name on it. It is perfectly useful, but it provides none of the isolation the pattern is worth having: the domain still ends up shaped by the table, which is exactly what the "not" list below is guarding against. Writing your own thin interface over the ORM's repository is not redundant work — it is where the pattern actually happens.
 
 ### What repositories should do
 
